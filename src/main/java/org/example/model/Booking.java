@@ -5,7 +5,7 @@ import java.util.List;
 public class Booking { 
  private int id; 
  private int flightId; 
- private List passengers; 
+ private List<Passenger> passengers;
  
  public Booking(int id, int flightId, List passengers) { 
  this.id = id; 

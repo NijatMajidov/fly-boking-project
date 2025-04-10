@@ -1,8 +1,12 @@
 package org.example.helper;
 
+import org.example.controller.BookingController;
 import org.example.controller.FlightController;
+import org.example.dao.BookingDAO;
 import org.example.dao.FlightDAO;
 import org.example.model.Flight;
+import org.example.model.Passenger;
+import org.example.service.BookingService;
 import org.example.service.FlightService;
 
 import java.time.LocalDate;
@@ -14,15 +18,15 @@ import java.util.Scanner;
 public class ConsoleApp {
     private final Scanner scanner = new Scanner(System.in);
     private final FlightController flightController;
-    //private final BookingController bookingController;
+    private final BookingController bookingController;
 
     public ConsoleApp() {
         FlightDAO flightDAO = new FlightDAO();
-       // BookingDAO bookingDAO = new BookingDAO();
+        BookingDAO bookingDAO = new BookingDAO();
         FlightService flightService = new FlightService(flightDAO);
-        //BookingService bookingService = new BookingService(bookingDAO, flightService);
+        BookingService bookingService = new BookingService(bookingDAO, flightService);
         this.flightController = new FlightController(flightService);
-        //this.bookingController = new BookingController(bookingService);
+        this.bookingController = new BookingController(bookingService);
     }
 
     public void start() {
@@ -36,9 +40,9 @@ public class ConsoleApp {
                 switch (choice) {
                     case "1" -> showOnlineBoard();
                     case "2" -> showFlightInfo();
-                   //case "3" -> searchAndBookFlight();
-                    // case "4" -> cancelBooking();
-                   // case "5" -> myBookings();
+                    case "3" -> searchAndBookFlight();
+                    case "4" -> cancelBooking();
+                   case "5" -> myBookings();
                     case "6" -> exitApp();
                     default -> System.out.println(" Invalid option. Try again.");
                 }
@@ -80,6 +84,73 @@ public class ConsoleApp {
         }
     }
 
+    private void searchAndBookFlight() {
+        System.out.print("Enter destination: ");
+        String destination = scanner.nextLine();
+
+        System.out.print("Enter date (yyyy-mm-dd): ");
+        LocalDate date = LocalDate.parse(scanner.nextLine());
+
+        System.out.print("Enter number of passengers: ");
+        int count = Integer.parseInt(scanner.nextLine());
+
+        List<Flight> results = flightController.searchFlights(destination, date.atStartOfDay(), count);
+        if (results.isEmpty()) {
+            System.out.println(" No flights found.");
+            return;
+        }
+
+        System.out.println("\nAvailable Flights:");
+        for (int i = 0; i < results.size(); i++) {
+            System.out.println((i + 1) + ". " + results.get(i));
+        }
+        System.out.println("0. Return to main menu");
+
+        System.out.print("Select a flight: ");
+        int choice = Integer.parseInt(scanner.nextLine());
+
+        if (choice == 0) return;
+        if (choice < 1 || choice > results.size()) {
+            System.out.println(" Invalid choice.");
+            return;
+        }
+
+        Flight selectedFlight = results.get(choice - 1);
+
+        List<Passenger> passengers = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            System.out.print("Enter first name of passenger #" + i + ": ");
+            String firstName = scanner.nextLine();
+            System.out.print("Enter last name of passenger #" + i + ": ");
+            String lastName = scanner.nextLine();
+            passengers.add(new Passenger(firstName, lastName));
+        }
+
+        bookingController.createBooking(selectedFlight, passengers);
+        System.out.println(" Booking confirmed!");
+    }
+
+    private void cancelBooking() {
+        System.out.print("Enter booking ID to cancel: ");
+        int id = Integer.parseInt(scanner.nextLine());
+        boolean success = bookingController.cancelBooking(id);
+        if (success) {
+            System.out.println(" Booking cancelled.");
+        } else {
+            System.out.println(" Booking not found.");
+        }
+    }
+
+    private void myBookings() {
+        System.out.print("Enter your full name: ");
+        String name = scanner.nextLine();
+        List<?> bookings = bookingController.getBookingsByPassenger(name);
+        if (bookings.isEmpty()) {
+            System.out.println(" No bookings found.");
+        } else {
+            bookings.forEach(System.out::println);
+        }
+    }
 
     private void exitApp() {
         System.out.println("Goodbye! ");
