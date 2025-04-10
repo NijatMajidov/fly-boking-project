@@ -55,7 +55,6 @@ public class FlightDAO {
     }
 
     public void updateFlight(Flight flight) {
-        // İndiki kolleksiyada dəyişiklik etməyə ehtiyac yoxdur çünki obyektin referensiyası dəyişməyib
         saveFlights();
     }
 }
