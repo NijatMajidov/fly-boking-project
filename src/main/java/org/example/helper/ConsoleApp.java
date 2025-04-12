@@ -4,6 +4,7 @@ import org.example.controller.BookingController;
 import org.example.controller.FlightController;
 import org.example.dao.BookingDAO;
 import org.example.dao.FlightDAO;
+import org.example.model.Booking;
 import org.example.model.Flight;
 import org.example.model.Passenger;
 import org.example.service.BookingService;
@@ -42,7 +43,7 @@ public class ConsoleApp {
                     case "2" -> showFlightInfo();
                     case "3" -> searchAndBookFlight();
                     case "4" -> cancelBooking();
-                   case "5" -> myBookings();
+                    case "5" -> myBookings();
                     case "6" -> exitApp();
                     default -> System.out.println(" Invalid option. Try again.");
                 }
@@ -85,15 +86,26 @@ public class ConsoleApp {
     }
 
     private void searchAndBookFlight() {
-        System.out.print("Enter destination: ");
-        String destination = scanner.nextLine();
+        String destination;
+        LocalDate date;
+        int count;
 
-        System.out.print("Enter date (yyyy-mm-dd): ");
-        LocalDate date = LocalDate.parse(scanner.nextLine());
+        while (true) {
+            try {
+                System.out.print("Enter destination: ");
+                destination = scanner.nextLine();
 
-        System.out.print("Enter number of passengers: ");
-        int count = Integer.parseInt(scanner.nextLine());
+                System.out.print("Enter date (yyyy-mm-dd): ");
+                date = LocalDate.parse(scanner.nextLine());
 
+                System.out.print("Enter number of passengers: ");
+                count = Integer.parseInt(scanner.nextLine());
+
+                break;
+            } catch (Exception e) {
+                System.out.println("⚠️ Invalid input. Please try again.");
+            }
+        }
         List<Flight> results = flightController.searchFlights(destination, date.atStartOfDay(), count);
         if (results.isEmpty()) {
             System.out.println(" No flights found.");
@@ -106,28 +118,43 @@ public class ConsoleApp {
         }
         System.out.println("0. Return to main menu");
 
-        System.out.print("Select a flight: ");
-        int choice = Integer.parseInt(scanner.nextLine());
+        Flight selectedFlight = null;
+        while (selectedFlight == null) {
+            System.out.print("Select a flight: ");
+            try {
+                int choice = Integer.parseInt(scanner.nextLine());
 
-        if (choice == 0) return;
-        if (choice < 1 || choice > results.size()) {
-            System.out.println(" Invalid choice.");
-            return;
+                if (choice == 0) return;
+                if (choice < 1 || choice > results.size()) {
+                    System.out.println("Invalid choice. Please try again.");
+                } else {
+                    selectedFlight = results.get(choice - 1);
+                }
+            } catch (Exception e) {
+                System.out.println("⚠️ Invalid input. Please enter a number.");
+            }
         }
-
-        Flight selectedFlight = results.get(choice - 1);
 
         List<Passenger> passengers = new ArrayList<>();
         for (int i = 1; i <= count; i++) {
-            System.out.print("Enter first name of passenger #" + i + ": ");
-            String firstName = scanner.nextLine();
-            System.out.print("Enter last name of passenger #" + i + ": ");
-            String lastName = scanner.nextLine();
-            passengers.add(new Passenger(firstName, lastName));
+            while (true) {
+                System.out.print("Enter first name of passenger #" + i + ": ");
+                String firstName = scanner.nextLine().trim();
+
+                System.out.print("Enter last name of passenger #" + i + ": ");
+                String lastName = scanner.nextLine().trim();
+
+                if (!firstName.isEmpty() && !lastName.isEmpty()) {
+                    passengers.add(new Passenger(firstName, lastName));
+                    break;
+                } else {
+                    System.out.println("⚠️ Names cannot be empty. Try again.");
+                }
+            }
         }
 
         bookingController.createBooking(selectedFlight, passengers);
-        System.out.println(" Booking confirmed!");
+        System.out.println("✅ Booking confirmed!");
     }
 
     private void cancelBooking() {
@@ -144,7 +171,7 @@ public class ConsoleApp {
     private void myBookings() {
         System.out.print("Enter your full name: ");
         String name = scanner.nextLine();
-        List<?> bookings = bookingController.getBookingsByPassenger(name);
+        List<Booking> bookings = bookingController.getBookingsByPassenger(name);
         if (bookings.isEmpty()) {
             System.out.println(" No bookings found.");
         } else {
